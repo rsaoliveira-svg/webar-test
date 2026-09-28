@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>WebAR - Vídeo sobre imagem</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .example-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    a-scene {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      background: transparent !important;
+    }
+
+    canvas.a-canvas {
+      background: transparent !important;
+    }
+
+    #startScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.88);
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    #startButton {
+      border: 0;
+      border-radius: 14px;
+      padding: 16px 22px;
+      background: #fff;
+      color: #111;
+      font: bold 18px Arial, sans-serif;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(0,0,0,.35);
+    }
+
+    #startButton:disabled {
+      opacity: .7;
+    }
+
+    #status {
+      position: fixed;
+      z-index: 900;
+      left: 50%;
+      top: 18px;
+      transform: translateX(-50%);
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(0,0,0,.60);
+      color: #fff;
+      font: 14px Arial, sans-serif;
+      text-align: center;
+      pointer-events: none;
+      max-width: 85vw;
+    }
+  </style>
+</head>
+<body>
+  <div id="startScreen">
+    <button id="startButton">Iniciar AR com áudio</button>
+  </div>
+
+  <div id="status">Toque em “Iniciar AR com áudio”.</div>
+
+  <div class="example-container">
+    <a-scene
+      mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiScanning: false; uiLoading: true; uiError: true;"
+      embedded
+      color-space="sRGB"
+      renderer="alpha: true; colorManagement: true; physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false">
+
+      <a-assets>
+        <video
+          id="arVideo"
+          src="./video.mp4"
+          preload="auto"
+          loop
+          playsinline
+          webkit-playsinline></video>
+      </a-assets>
+
+      <a-camera
+        position="0 0 0"
+        look-controls="enabled: false">
+      </a-camera>
+
+      <!-- O vídeo é colocado exatamente sobre o alvo reconhecido. -->
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-video
+          id="videoPlane"
+          src="#arVideo"
+          position="0 0 0"
+          width="1"
+          height="0.5625"
+          rotation="0 0 0">
+        </a-video>
+      </a-entity>
+    </a-scene>
+  </div>
+
+  <script>
+    const scene = document.querySelector('a-scene');
+    const status = document.querySelector('#status');
+    const video = document.querySelector('#arVideo');
+    const startScreen = document.querySelector('#startScreen');
+    const startButton = document.querySelector('#startButton');
+    const target = document.querySelector('[mindar-image-target]');
+
+    let audioUnlocked = false;
+
+    scene.addEventListener('arReady', () => {
+      status.textContent = 'Câmera pronta. Aponte para a imagem.';
+    });
+
+    scene.addEventListener('arError', () => {
+      status.textContent = 'Não foi possível iniciar a câmera.';
+    });
+
+    startButton.addEventListener('click', async () => {
+      startButton.disabled = true;
+      startButton.textContent = 'Iniciando…';
+      status.textContent = 'Preparando áudio e câmera…';
+
+      try {
+        // O toque do usuário libera a reprodução com áudio.
+        await video.play();
+        video.pause();
+        video.currentTime = 0;
+        audioUnlocked = true;
+
+        startScreen.style.display = 'none';
+        status.textContent = 'Câmera iniciando…';
+
+        const mindarSystem = scene.systems['mindar-image-system'];
+        await mindarSystem.start();
+      } catch (e) {
+        console.error('Erro ao iniciar AR:', e);
+        status.textContent = 'Toque novamente para liberar o áudio e iniciar a câmera.';
+        startButton.disabled = false;
+        startButton.textContent = 'Iniciar AR com áudio';
+      }
+    });
+
+    target.addEventListener('targetFound', async () => {
+      status.textContent = 'Imagem reconhecida!';
+      try {
+        video.currentTime = 0;
+        await video.play();
+      } catch (e) {
+        console.error('Erro ao reproduzir vídeo:', e);
+        status.textContent = audioUnlocked
+          ? 'Imagem reconhecida. Toque na tela para reproduzir o vídeo.'
+          : 'Imagem reconhecida. Toque na tela para liberar o áudio.';
+      }
+    });
+
+    target.addEventListener('targetLost', () => {
+      status.textContent = 'Aponte novamente para a imagem.';
+      video.pause();
+    });
+  </script>
+</body>
+</html>
