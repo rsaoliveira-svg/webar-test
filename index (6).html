@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>NOME DO MURAL</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#111827">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="NOME DO MURAL">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="./icon-192.png">
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+    .example-container { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+
+    #soundHint {
+      position: fixed; z-index: 900; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+      transform: translateX(-50%); padding: 12px 18px; border-radius: 999px;
+      background: rgba(255,255,255,.92); color: #111; font: bold 15px Arial, sans-serif;
+      display: none; pointer-events: none;
+    }
+    #warn {
+      position: fixed; z-index: 900; left: 50%; bottom: 80px; transform: translateX(-50%);
+      max-width: 85vw; color: #fff; font: 13px Arial, sans-serif; text-align: center;
+      text-shadow: 0 1px 4px #000;
+    }
+    #status {
+      position: fixed; z-index: 900; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 14px);
+      transform: translateX(-50%); padding: 10px 14px; border-radius: 10px;
+      background: rgba(0,0,0,.6); color: #fff; font: 14px Arial, sans-serif;
+      text-align: center; pointer-events: none; max-width: 85vw;
+    }
+  </style>
+</head>
+<body>
+  <div id="soundHint">🔇 Toque na tela para ativar o som</div>
+  <div id="warn"></div>
+
+  <div id="status">Iniciando a câmera…</div>
+
+  <div class="example-container">
+    <!-- Valores de ui* devem ser "yes" ou "no" (true/false não funcionam no MindAR). -->
+    <a-scene
+      mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; uiLoading: yes; uiScanning: no; uiError: yes; filterMinCF: 0.001; filterBeta: 1000; missTolerance: 10; warmupTolerance: 3;"
+      color-space="sRGB"
+      renderer="colorManagement: true; physicallyCorrectLights: true"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false">
+
+      <a-assets>
+        <video id="arVideo" src="./video.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <!-- AJUSTE AQUI conforme o vídeo: width="1" e height = altura ÷ largura do vídeo (16:9 = 0.5625; 4:3 = 0.75).
+           No MindAR, a largura da imagem-alvo = 1 unidade.
+           Seu alvo tem 2000x1414 px, então a altura dele = 0.707.
+           O vídeo (16:9) com largura 1 tem altura 0.5625 e fica centralizado sobre a imagem. -->
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-video id="videoPlane" src="#arVideo" position="0 0 0.001" width="1" height="0.5625"></a-video>
+      </a-entity>
+    </a-scene>
+  </div>
+
+  <script>
+    const scene = document.querySelector('a-scene');
+    const statusEl = document.querySelector('#status');
+    const video = document.querySelector('#arVideo');
+    const hint = document.querySelector('#soundHint');
+    const warn = document.querySelector('#warn');
+    const target = document.querySelector('[mindar-image-target]');
+
+    let targetVisible = false;
+
+    if (!window.isSecureContext) {
+      warn.textContent = 'A câmera só funciona em HTTPS (ex.: GitHub Pages).';
+    } else if (/Instagram|FBAN|FBAV|WhatsApp|Line\//i.test(navigator.userAgent)) {
+      warn.textContent = 'Abra o link no Chrome ou Safari: navegadores dentro de apps costumam bloquear a câmera.';
+    }
+
+    scene.addEventListener('arReady', () => {
+      statusEl.textContent = 'Aponte para a imagem.';
+    });
+    scene.addEventListener('arError', () => {
+      statusEl.textContent = 'Não foi possível iniciar a câmera. Permita o acesso e recarregue a página.';
+    });
+
+    target.addEventListener('targetFound', async () => {
+      targetVisible = true;
+      statusEl.textContent = 'Imagem reconhecida!';
+      hint.style.display = video.muted ? 'block' : 'none';
+      try { await video.play(); } catch (e) { console.error(e); }
+    });
+
+    target.addEventListener('targetLost', () => {
+      targetVisible = false;
+      statusEl.textContent = 'Aponte novamente para a imagem.';
+      hint.style.display = 'none';
+      video.pause();
+    });
+
+    // Service worker (necessário para o Chrome oferecer "Instalar app")
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js').catch((e) => console.warn('SW:', e));
+      });
+    }
+
+    // Tela cheia no primeiro toque (Android/Chrome). No iPhone Safari não é permitido;
+    // lá, só o app instalado na tela inicial fica sem barra.
+    const instalado = window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches
+      || navigator.standalone === true;
+    function tentarTelaCheia() {
+      if (instalado || document.fullscreenElement) return;
+      const el = document.documentElement;
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (req) { try { Promise.resolve(req.call(el, { navigationUI: 'hide' })).catch(() => {}); } catch (e) {} }
+    }
+
+    // Um toque em qualquer lugar liga o som (exigência dos navegadores)
+    document.addEventListener('click', () => {
+      tentarTelaCheia();
+      video.muted = false;
+      hint.style.display = 'none';
+      if (targetVisible && video.paused) video.play().catch(() => {});
+    });
+  </script>
+</body>
+</html>
