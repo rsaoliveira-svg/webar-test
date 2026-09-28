@@ -1,114 +1,177 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-  <title>WebAR - Vídeo sobre imagem</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
 
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"
+  >
+
+  <title>WebAR</title>
+
+  <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+  <!-- MindAR -->
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
+
   <style>
+
     html,
     body {
       margin: 0;
       padding: 0;
+
       width: 100%;
       height: 100%;
+
       overflow: hidden;
-      background: transparent !important;
+
+      background: #000;
     }
+
+
+    /*
+      O container ocupa toda a tela.
+    */
 
     .example-container {
+
       position: fixed;
-      inset: 0;
+
+      top: 0;
+      left: 0;
+
       width: 100%;
       height: 100%;
+
       overflow: hidden;
-      background: transparent !important;
     }
+
+
+    /*
+      O A-Frame ocupa toda a tela.
+      Não estamos alterando a câmera do MindAR.
+    */
 
     a-scene {
+
       position: fixed !important;
-      inset: 0 !important;
+
+      top: 0 !important;
+      left: 0 !important;
+
       width: 100% !important;
       height: 100% !important;
-      background: transparent !important;
     }
 
-    /* IMPORTANTE:
-       o canvas do A-Frame NÃO pode pintar um fundo preto */
-    canvas.a-canvas {
-      position: fixed !important;
-      inset: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      background: transparent !important;
-      z-index: 2 !important;
-    }
 
-    /* O vídeo da câmera do MindAR deve ficar ATRÁS do canvas */
-    video.mindar-video {
-      position: fixed !important;
-      inset: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: cover !important;
-      z-index: 1 !important;
-    }
+    /*
+      Tela inicial.
+      Aparece somente antes de iniciar o AR.
+    */
 
     #startScreen {
+
       position: fixed;
-      inset: 0;
+
+      top: 0;
+      left: 0;
+
+      width: 100%;
+      height: 100%;
+
       z-index: 1000;
 
       display: flex;
+
       align-items: center;
       justify-content: center;
 
-      background: rgba(0,0,0,.88);
+      background: rgba(0, 0, 0, 0.88);
 
       padding: 24px;
+
       box-sizing: border-box;
     }
 
-    #startButton {
-      border: 0;
-      border-radius: 14px;
-      padding: 16px 22px;
 
-      background: #fff;
+    #startButton {
+
+      border: none;
+
+      border-radius: 14px;
+
+      padding: 17px 24px;
+
+      background: white;
+
       color: #111;
 
-      font: bold 18px Arial, sans-serif;
+      font-family: Arial, sans-serif;
+
+      font-size: 18px;
+
+      font-weight: bold;
 
       cursor: pointer;
 
-      box-shadow: 0 4px 18px rgba(0,0,0,.35);
+      box-shadow:
+        0 4px 18px rgba(0,0,0,.35);
     }
+
 
     #startButton:disabled {
-      opacity: .7;
+
+      opacity: .65;
+
     }
 
-    #status {
-      position: fixed;
-      z-index: 900;
 
-      left: 50%;
+    /*
+      Mensagem pequena no topo.
+    */
+
+    #status {
+
+      position: fixed;
+
       top: 18px;
+      left: 50%;
 
       transform: translateX(-50%);
 
-      padding: 10px 14px;
+      z-index: 900;
+
+      padding: 9px 13px;
 
       border-radius: 10px;
 
-      background: rgba(0,0,0,.60);
-      color: #fff;
+      background: rgba(0,0,0,.55);
 
-      font: 14px Arial, sans-serif;
+      color: white;
+
+      font-family: Arial, sans-serif;
+
+      font-size: 14px;
 
       text-align: center;
 
@@ -116,30 +179,64 @@
 
       max-width: 85vw;
     }
+
+
+    /*
+      Quando o AR estiver funcionando,
+      podemos esconder a mensagem.
+    */
+
+    #status.hidden {
+
+      display: none;
+
+    }
+
   </style>
+
 </head>
+
 
 <body>
 
+
+  <!--
+    Tela inicial
+  -->
+
   <div id="startScreen">
+
     <button id="startButton">
       Iniciar AR com áudio
     </button>
+
   </div>
+
+
+  <!--
+    Status
+  -->
 
   <div id="status">
     Toque em “Iniciar AR com áudio”.
   </div>
 
+
+  <!--
+    AR
+  -->
+
   <div class="example-container">
 
+
     <a-scene
+
       mindar-image="
         imageTargetSrc: ./targets.mind;
         autoStart: false;
         uiScanning: false;
-        uiLoading: true;
-        uiError: true;
+        uiLoading: false;
+        uiError: false;
       "
 
       embedded
@@ -147,49 +244,80 @@
       color-space="sRGB"
 
       renderer="
-        alpha: true;
-        antialias: true;
         colorManagement: true;
         physicallyCorrectLights;
       "
 
       vr-mode-ui="enabled: false"
+
       device-orientation-permission-ui="enabled: false"
     >
+
+
+      <!--
+        VÍDEO
+      -->
 
       <a-assets>
 
         <video
+
           id="arVideo"
+
           src="./video.mp4"
+
           preload="auto"
+
           loop
+
           playsinline
+
           webkit-playsinline
+
         ></video>
 
       </a-assets>
 
 
+      <!--
+        CÂMERA DO A-FRAME / MINDAR
+
+        Não colocamos imagem de referência aqui.
+      -->
+
       <a-camera
+
         position="0 0 0"
-        look-controls="enabled: false">
-      </a-camera>
+
+        look-controls="enabled: false"
+
+      ></a-camera>
 
 
       <!--
-        O TARGET NÃO MOSTRA A IMAGEM DE REFERÊNCIA.
+        ALVO
 
-        Ele apenas informa ao MindAR onde o vídeo
-        deve ser colocado.
+        O targets.mind é usado somente
+        para reconhecer a imagem.
+
+        A imagem original NÃO é exibida.
       -->
 
       <a-entity
+
         id="imageTarget"
+
         mindar-image-target="targetIndex: 0"
+
       >
 
+
+        <!--
+          VÍDEO SOBRE O ALVO
+        -->
+
         <a-video
+
           id="videoPlane"
 
           src="#arVideo"
@@ -197,18 +325,16 @@
           position="0 0 0.01"
 
           width="1"
+
           height="0.5625"
 
           rotation="0 0 0"
 
-          material="
-            shader: flat;
-            transparent: false;
-          "
-        >
-        </a-video>
+        ></a-video>
+
 
       </a-entity>
+
 
     </a-scene>
 
@@ -217,137 +343,197 @@
 
   <script>
 
-    const scene = document.querySelector('a-scene');
+    /*
+      Elementos
+    */
 
-    const status =
-      document.querySelector('#status');
+    const scene =
+      document.querySelector("a-scene");
 
     const video =
-      document.querySelector('#arVideo');
-
-    const startScreen =
-      document.querySelector('#startScreen');
-
-    const startButton =
-      document.querySelector('#startButton');
+      document.querySelector("#arVideo");
 
     const target =
-      document.querySelector('#imageTarget');
+      document.querySelector("#imageTarget");
 
-    let audioUnlocked = false;
+    const startScreen =
+      document.querySelector("#startScreen");
+
+    const startButton =
+      document.querySelector("#startButton");
+
+    const status =
+      document.querySelector("#status");
 
 
     /*
-     * Garante que o renderer WebGL
-     * realmente limpe com alpha 0.
-     */
-    scene.addEventListener('renderstart', () => {
+      Tela cheia
+    */
 
-      const renderer = scene.renderer;
+    async function entrarTelaCheia() {
 
-      if (renderer) {
+      try {
 
-        renderer.setClearColor(0x000000, 0);
+        const elemento =
+          document.documentElement;
 
-        renderer.autoClear = true;
+        if (
+          elemento.requestFullscreen &&
+          !document.fullscreenElement
+        ) {
+
+          await elemento.requestFullscreen();
+
+        }
+
+      } catch (erro) {
+
+        console.log(
+          "Tela cheia não disponível:",
+          erro
+        );
 
       }
 
-    });
+    }
 
 
     /*
-     * Quando o MindAR estiver pronto.
-     */
-    scene.addEventListener('arReady', () => {
+      Quando o MindAR estiver pronto.
+    */
 
-      status.textContent =
-        'Câmera pronta. Aponte para a imagem.';
+    scene.addEventListener(
+      "arReady",
+      () => {
 
-    });
+        status.textContent =
+          "Aponte a câmera para a imagem.";
 
-
-    /*
-     * Erro da câmera/AR.
-     */
-    scene.addEventListener('arError', () => {
-
-      status.textContent =
-        'Não foi possível iniciar a câmera.';
-
-    });
+      }
+    );
 
 
     /*
-     * Botão inicial.
-     *
-     * O clique libera o áudio do vídeo
-     * e depois inicia o MindAR.
-     */
+      Erro
+    */
+
+    scene.addEventListener(
+      "arError",
+      () => {
+
+        status.textContent =
+          "Não foi possível iniciar a câmera.";
+
+      }
+    );
+
+
+    /*
+      BOTÃO INICIAR
+    */
+
     startButton.addEventListener(
-      'click',
+      "click",
       async () => {
 
         startButton.disabled = true;
 
         startButton.textContent =
-          'Iniciando…';
+          "Iniciando...";
 
         status.textContent =
-          'Preparando áudio e câmera…';
+          "Preparando câmera...";
 
 
         try {
 
           /*
-           * Libera a reprodução do vídeo
-           * através da interação do usuário.
-           */
+            O primeiro toque do usuário
+            libera o vídeo com áudio.
+          */
+
+          video.muted = false;
+
           await video.play();
 
           video.pause();
 
           video.currentTime = 0;
 
-          audioUnlocked = true;
+
+          /*
+            Tela cheia quando o navegador
+            permitir.
+          */
+
+          await entrarTelaCheia();
 
 
           /*
-           * Esconde a tela inicial.
-           */
+            Esconde a tela inicial.
+          */
+
           startScreen.style.display =
-            'none';
-
-
-          status.textContent =
-            'Câmera iniciando…';
+            "none";
 
 
           /*
-           * Inicia o MindAR.
-           */
+            Inicia o MindAR.
+          */
+
           const mindarSystem =
             scene.systems[
-              'mindar-image-system'
+              "mindar-image-system"
             ];
+
 
           await mindarSystem.start();
 
 
-        } catch (error) {
+        } catch (erro) {
 
           console.error(
-            'Erro ao iniciar AR:',
-            error
+            "Erro ao iniciar:",
+            erro
           );
 
-          status.textContent =
-            'Toque novamente para liberar o áudio e iniciar a câmera.';
 
-          startButton.disabled = false;
+          /*
+            Alguns navegadores podem
+            bloquear a tela cheia ou
+            o áudio. Isso não deve impedir
+            a tentativa de iniciar o AR.
+          */
 
-          startButton.textContent =
-            'Iniciar AR com áudio';
+          try {
+
+            const mindarSystem =
+              scene.systems[
+                "mindar-image-system"
+              ];
+
+            await mindarSystem.start();
+
+            startScreen.style.display =
+              "none";
+
+          } catch (erroAR) {
+
+            console.error(
+              "Erro no MindAR:",
+              erroAR
+            );
+
+            status.textContent =
+              "Não foi possível iniciar a câmera.";
+
+            startButton.disabled =
+              false;
+
+            startButton.textContent =
+              "Iniciar AR com áudio";
+
+          }
 
         }
 
@@ -356,15 +542,26 @@
 
 
     /*
-     * IMAGEM ENCONTRADA
-     */
+      IMAGEM ENCONTRADA
+    */
+
     target.addEventListener(
-      'targetFound',
+      "targetFound",
       async () => {
 
-        status.textContent =
-          'Imagem reconhecida!';
+        console.log(
+          "Target encontrado"
+        );
 
+
+        status.textContent =
+          "Imagem reconhecida!";
+
+
+        /*
+          Pequeno atraso para garantir
+          que o alvo já esteja estabilizado.
+        */
 
         try {
 
@@ -373,16 +570,34 @@
           await video.play();
 
 
-        } catch (error) {
+          /*
+            Depois que o vídeo começou,
+            podemos esconder o status.
+          */
+
+          setTimeout(() => {
+
+            status.classList.add(
+              "hidden"
+            );
+
+          }, 1000);
+
+
+        } catch (erro) {
 
           console.error(
-            'Erro ao reproduzir vídeo:',
-            error
+            "Erro ao reproduzir vídeo:",
+            erro
           );
 
 
+          status.classList.remove(
+            "hidden"
+          );
+
           status.textContent =
-            'Imagem reconhecida. Toque na tela para reproduzir o vídeo.';
+            "Imagem reconhecida. Toque na tela para reproduzir o vídeo.";
 
         }
 
@@ -391,21 +606,36 @@
 
 
     /*
-     * IMAGEM PERDIDA
-     */
+      IMAGEM PERDIDA
+    */
+
     target.addEventListener(
-      'targetLost',
+      "targetLost",
       () => {
 
-        status.textContent =
-          'Aponte novamente para a imagem.';
+        console.log(
+          "Target perdido"
+        );
+
 
         video.pause();
+
+
+        status.classList.remove(
+          "hidden"
+        );
+
+
+        status.textContent =
+          "Aponte novamente para a imagem.";
 
       }
     );
 
+
   </script>
 
+
 </body>
+
 </html>
